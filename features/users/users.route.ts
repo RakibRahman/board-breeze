@@ -1,9 +1,11 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 import { validate } from "../../middlewares/validation.middleware";
+import { idUUIDRequestSchema } from "../../models/schema";
 import { generateJWT } from "../../utils/generateToken";
-import { userLoginPostSchema, userRegisterPostSchema } from "./users.schema";
-import { userLogin, userRegistration } from "./users.service";
 import { ONE_HR } from "../constant";
+import { userLoginPostSchema, userRegisterPostSchema } from "./users.schema";
+import { getUserDetails, userLogin, userRegistration } from "./users.service";
+import { log } from "console";
 
 const cookieConfig = {
   httpOnly: true,
@@ -52,3 +54,14 @@ usersRoute.post(
   }
 );
 
+usersRoute.get(
+  "/:id",
+  validate(idUUIDRequestSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { params } = idUUIDRequestSchema.parse(req);
+    const user = await getUserDetails(params.id);
+    user
+      ? res.json({ data: user, success: true })
+      : res.status(404).json({ message: "Failed to get user details", success: false });
+  }
+);

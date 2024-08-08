@@ -2,19 +2,18 @@ import { query } from "express";
 import { hashPassword, isValidPassword } from "../../utils/hashPassword";
 import { User } from "./users.schema";
 import { pg_query } from "../../db/db";
-import { log } from "console";
+import { log, profile } from "console";
 import { generateJWT } from "../../utils/generateToken";
 
 export const userRegistration = async (payload: User) => {
   const { name, email, password } = payload;
   const securedPassword = await hashPassword(password);
-  const sql = `INSERT INTO users (name,email,password) values($1,$2,$3)`;
+  const insert_sql = `INSERT INTO users (name,email,password) values($1,$2,$3)`;
+  const get_sql = `SELECT id,name,email from users where email=$1`;
+
   try {
-    await pg_query(sql, [name, email, securedPassword]);
-    const user = await pg_query(
-      `SELECT id,name,email from users where email=$1`,
-      [email]
-    );
+    await pg_query(insert_sql, [name, email, securedPassword]);
+    const user = await pg_query(get_sql, [email]);
 
     return user.rows[0];
   } catch (err: any) {
@@ -51,4 +50,19 @@ export const userLogin = async (payload: Omit<User, "name">) => {
   } catch (error) {
     throw error;
   }
+};
+
+export const getUserDetails = async (id: string) => {
+  const get_user_sql = `SELECT id,name,email,avatar,created_at from users where id=$1`;
+  const get_user_boards_sql = `SELECT id,name FROM boards WHERE creator_id=$1`;
+  const get_recent_tasks_sql = `SELECT id,title FROM tasks WHERE creator_id=$1 ORDER BY created_at DESC LIMIT 10`;
+  const user = await pg_query(get_user_sql, [id]);
+  const boards = await pg_query(get_user_boards_sql, [id]);
+  const tasks = await pg_query(get_recent_tasks_sql, [id]);
+  const payload = {
+    profile: user.rows[0],
+    boards: boards.rows,
+    recent_tasks: tasks.rows,
+  };
+  return user.rows[0] ? payload : null;
 };
