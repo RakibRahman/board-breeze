@@ -24,7 +24,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000,
 });
 
-export const query = (text: string, values?: any[]) => pool.query(text, values);
+export const pg_query = (text: string, values?: any[]) => pool.query(text, values);
 
 export const initializeDatabase = async () => {
   try {
@@ -35,7 +35,7 @@ export const initializeDatabase = async () => {
         if (err) {
           throw err;
         }
-        await query(`${data}`);
+        await pg_query(`${data}`);
       });
     }
   } catch (error) {
