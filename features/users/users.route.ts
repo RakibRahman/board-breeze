@@ -3,9 +3,19 @@ import { validate } from "../../middlewares/validation.middleware";
 import { idUUIDRequestSchema } from "../../models/schema";
 import { generateJWT } from "../../utils/generateToken";
 import { ONE_HR } from "../constant";
-import { userLoginPostSchema, userRegisterPostSchema } from "./users.schema";
-import { getUserDetails, userLogin, userRegistration } from "./users.service";
+import {
+  userLoginPostSchema,
+  userRegisterPostSchema,
+  userUpdatePutSchema,
+} from "./users.schema";
+import {
+  getUserProfile,
+  updateUserProfile,
+  userLogin,
+  userRegistration,
+} from "./users.service";
 import { log } from "console";
+import { hashPassword } from "../../utils/hashPassword";
 
 const cookieConfig = {
   httpOnly: true,
@@ -59,9 +69,41 @@ usersRoute.get(
   validate(idUUIDRequestSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     const { params } = idUUIDRequestSchema.parse(req);
-    const user = await getUserDetails(params.id);
+    const user = await getUserProfile(params.id);
     user
       ? res.json({ data: user, success: true })
-      : res.status(404).json({ message: "Failed to get user details", success: false });
+      : res
+          .status(404)
+          .json({ message: "Failed to get user details", success: false });
+  }
+);
+
+usersRoute.put(
+  "/:id",
+  validate(userUpdatePutSchema),
+  async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      params: { id },
+      body,
+    } = userUpdatePutSchema.parse(req);
+
+    if ("password" in body) {
+      body.password = await hashPassword(body.password!);
+    }
+
+    try {
+      const user = await updateUserProfile(id, body);
+      user
+        ? res.json({
+            data: user,
+            success: true,
+            message: "User profile updated successfully.",
+          })
+        : res
+            .status(404)
+            .json({ message: "Failed to update user details", success: false });
+    } catch (error) {
+      next(error);
+    }
   }
 );

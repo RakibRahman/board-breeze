@@ -1,9 +1,9 @@
-import { query } from "express";
+import { pg_query } from "../../db/db";
+import { CustomError } from "../../models/types";
+import { updateColumnsById } from "../../utils/commons";
+import { generateJWT } from "../../utils/generateToken";
 import { hashPassword, isValidPassword } from "../../utils/hashPassword";
 import { User } from "./users.schema";
-import { pg_query } from "../../db/db";
-import { log, profile } from "console";
-import { generateJWT } from "../../utils/generateToken";
 
 export const userRegistration = async (payload: User) => {
   const { name, email, password } = payload;
@@ -52,7 +52,7 @@ export const userLogin = async (payload: Omit<User, "name">) => {
   }
 };
 
-export const getUserDetails = async (id: string) => {
+export const getUserProfile = async (id: string) => {
   const get_user_sql = `SELECT id,name,email,avatar,created_at from users where id=$1`;
   const get_user_boards_sql = `SELECT id,name FROM boards WHERE creator_id=$1`;
   const get_recent_tasks_sql = `SELECT id,title FROM tasks WHERE creator_id=$1 ORDER BY created_at DESC LIMIT 10`;
@@ -65,4 +65,26 @@ export const getUserDetails = async (id: string) => {
     recent_tasks: tasks.rows,
   };
   return user.rows[0] ? payload : null;
+};
+
+export const updateUserProfile = async (
+  id: string,
+  payload: Partial<User & { avatar: string }>
+) => {
+  const { sql, values, keys } = updateColumnsById(id, "USERS", payload);
+
+  if (!keys.length) {
+    throw new CustomError("Invalid data provided", 422);
+  }
+  try {
+    const user = await pg_query(sql, values);
+
+    return user.rowCount ? user.rows[0] : null;
+  } catch (err: any) {
+    if (err?.code === "23505" && err.constraint === "users_email_key") {
+      err.detail;
+      throw new Error(`Account already registered with ${payload.email}`);
+    }
+    throw new Error(err);
+  }
 };
