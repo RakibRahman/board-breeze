@@ -28,7 +28,7 @@ export const userRegistration = async (payload: User) => {
 export const userLogin = async (payload: Omit<User, "name">) => {
   const { email, password } = payload;
 
-  const sql = `SELECT * FROM users WHERE email=$1;`;
+  const sql = `SELECT id,name,email FROM users WHERE email=$1;`;
 
   try {
     const admin = await pg_query(sql, [email]);
@@ -40,9 +40,8 @@ export const userLogin = async (payload: Omit<User, "name">) => {
 
     const verifyPassword = await isValidPassword(user.password, password);
 
-    if (verifyPassword) {
-      const data = { id: user.id, email, name: user.name };
-      const token = generateJWT(data);
+    if (verifyPassword) { 
+      const token = generateJWT(user);
       return { token };
     } else {
       throw new Error("Invalid Credentials");
