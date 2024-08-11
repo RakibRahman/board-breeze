@@ -1,3 +1,4 @@
+import { log } from "console";
 import { pg_query } from "../../db/db";
 import { CustomError } from "../../models/types";
 import { updateColumnsById } from "../../utils/commons";
@@ -27,8 +28,8 @@ export const userRegistration = async (payload: User) => {
 
 export const userLogin = async (payload: Omit<User, "name">) => {
   const { email, password } = payload;
-
-  const sql = `SELECT id,name,email FROM users WHERE email=$1;`;
+log({payload})
+  const sql = `SELECT id,name,email,password FROM users WHERE email=$1;`;
 
   try {
     const admin = await pg_query(sql, [email]);
@@ -39,6 +40,7 @@ export const userLogin = async (payload: Omit<User, "name">) => {
     }
 
     const verifyPassword = await isValidPassword(user.password, password);
+    log({isValidPassword})
 
     if (verifyPassword) { 
       const token = generateJWT(user);
