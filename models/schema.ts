@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+export const uuidValidation = z.string().uuid();
 export const idNumberRequestSchema = z.object({
   params: z.object({
     id: z.coerce.number().int().positive(),
@@ -8,7 +9,7 @@ export const idNumberRequestSchema = z.object({
 
 export const idUUIDRequestSchema = z.object({
   params: z.object({
-    id: z.string().uuid(),
+    id: uuidValidation,
   }),
 });
 

@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import { User } from "../features/users/users.schema";
 import { ONE_HR } from "../features/constant";
 
-type JwtTokenPayload ={id:string} & Omit<User, "password">;
+export type JwtTokenPayload ={id:string} & Omit<User, "password">;
 dotenv.config();
 const env = process.env;
 
