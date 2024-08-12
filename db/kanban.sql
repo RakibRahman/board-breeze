@@ -46,14 +46,24 @@ CREATE TABLE IF NOT EXISTS tasks (
             'stuck'
         )
     ),
-    priority VARCHAR(50) CHECK (priority IN ('normal', 'high', 'medium', 'low')),
-    column_id UUID REFERENCES columns(id),
-    creator_id UUID REFERENCES users(id),
-    board_id UUID REFERENCES boards(id),
-    assignee_id UUID REFERENCES users(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
+    DATE VARCHAR(20) CHECK (
+        DATE IN (
+            'today',
+            'tomorrow',
+            'overdue',
+            'thisweek',
+            'nextweek',
+            'future'
+        ),
+        duedate DATE DEFAULT NULL,
+        priority VARCHAR(50) CHECK (priority IN ('normal', 'high', 'medium', 'low')),
+        column_id UUID REFERENCES columns(id),
+        creator_id UUID REFERENCES users(id),
+        board_id UUID REFERENCES boards(id),
+        assignee_id UUID REFERENCES users(id),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
 
 CREATE TABLE IF NOT EXISTS comments (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
