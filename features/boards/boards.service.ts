@@ -24,7 +24,7 @@ ORDER BY ${"BRD." + sortBy.name} ${sortBy.order};
     `;
   log(sql);
   try {
-    const data = await pg_query(sql, [id]);
+    const data = await pg_query(sql, [id,query?query:'']);
     return {
       boardList: data.rows,
       total: data.rowCount,
