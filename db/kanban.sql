@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS boards (
 );
 
 CREATE TABLE IF NOT EXISTS board_users (
-    board_id INTEGER REFERENCES boards(id),
-    user_id INTEGER REFERENCES users(id),
+    board_id UUID REFERENCES boards(id),
+    user_id UUID REFERENCES users(id),
     role VARCHAR(50) CHECK (role IN ('admin', 'moderator', 'member')),
     PRIMARY KEY (board_id, user_id)
 );
