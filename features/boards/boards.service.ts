@@ -1,17 +1,18 @@
 import { log } from "console";
 import { pg_query } from "../../db/db";
-import { Board, BoardPayload } from "./boards.schema";
-import { query } from "express";
+import { Board, BoardPatchPayload, BoardPayload } from "./boards.schema";
+import { updateColumnsById } from "../../utils/commons";
+import { DB_Tables } from "../../db/Tables";
 
 export const getUserBoards = async (payload: BoardPayload["body"]) => {
-  const { id, onlyMe, sortBy, query } = payload;
-  const searchSql = query ? `AND BRD.NAME LIKE '%' || $2 || '%'` : "";
-  const sql = `
+  const { id, onlyMe, sortBy, query, page, size } = payload;
+  const offset = (page - 1) * size;
+  const baseSql = `
   SELECT
 	B_U.BOARD_ID,
 	B_U.ROLE,
 	BRD.NAME,
-	BRD.CREATED_AT,
+	BRD.UPDATED_AT,
 	U.ID AS CREATOR_ID,
 	U.NAME AS CREATOR_NAME
 FROM
@@ -19,15 +20,29 @@ FROM
 	JOIN BOARDS BRD ON BRD.ID = B_U.BOARD_ID
 	JOIN USERS U ON U.ID = BRD.CREATOR_ID
 WHERE
-	 ${onlyMe ? "BRD.CREATOR_ID" : "B_U.USER_ID"} = $1 ${searchSql}
-ORDER BY ${"BRD." + sortBy.name} ${sortBy.order};
+	 ${
+     onlyMe ? "BRD.CREATOR_ID" : "B_U.USER_ID"
+   } = $1 AND BRD.NAME LIKE '%' || $2 || '%'
+ORDER BY ${"BRD." + sortBy.name} ${sortBy.order}
     `;
-  log(sql);
+  const sql = `${baseSql} LIMIT $3 OFFSET $4`;
+
+  const totalBoardsResult = await pg_query(
+    `SELECT COUNT(*) FROM (${baseSql}) AS subquery;`,
+    [id, query || ""]
+  );
+
+  const totalBoards = totalBoardsResult.rows[0].count;
+  const totalPages = Math.ceil(totalBoards / size);
+
   try {
-    const data = await pg_query(sql, [id,query?query:'']);
+    const data = await pg_query(sql, [id, query || "", size, offset]);
     return {
       boardList: data.rows,
-      total: data.rowCount,
+      total: totalBoards,
+      totalPages,
+      nextPage: totalPages === page || totalPages === 0 ? null : page + 1,
+      prevPage: page === 1 ? null : page ? page - 1 : 1,
     };
   } catch (error) {
     throw error;
@@ -35,33 +50,53 @@ ORDER BY ${"BRD." + sortBy.name} ${sortBy.order};
 };
 
 export const createBoard = async (payload: Board) => {
-
   try {
-    // First, create the function
-    await pg_query(`CREATE OR REPLACE FUNCTION insert_board_user() RETURNS TRIGGER AS $$
-        BEGIN
-          INSERT INTO board_users (board_id, user_id, role)
-          VALUES (NEW.id, NEW.creator_id, 'admin');
-    
-          RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;`);
+    await pg_query(`
+      BEGIN;
 
-    // Second, create the trigger
-    await pg_query(
-      `CREATE OR REPLACE TRIGGER after_insert_boards AFTER INSERT ON boards FOR EACH ROW EXECUTE PROCEDURE insert_board_user();`
-    );
+CREATE
+OR REPLACE FUNCTION INSERT_BOARD_USER () RETURNS TRIGGER AS $$
+          BEGIN
+            INSERT INTO board_users (board_id, user_id, role)
+            VALUES (NEW.id, NEW.creator_id, 'admin');
+      
+            RETURN NEW;
+          END;
+          $$ LANGUAGE PLPGSQL;
 
-    // Finally, insert the board
+CREATE
+OR REPLACE TRIGGER AFTER_INSERT_BOARDS
+AFTER INSERT ON BOARDS FOR EACH ROW
+EXECUTE PROCEDURE INSERT_BOARD_USER ();
+
+COMMIT;
+      
+      `);
+
     const data = await pg_query(
       `
           INSERT INTO boards (name, description, creator_id)
-          VALUES ($1, $2, $3);
+          VALUES ($1, $2, $3) RETURNING id,name,description;
         `,
       [payload.name, payload.description, payload.creator_id]
     );
 
-    return { data: data.rows };
+    return data.rows[0];
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateBoard = async (
+  boardId: string,
+  payload: BoardPatchPayload
+) => {
+ 
+  const { sql, values } = updateColumnsById(boardId, "BOARDS",  { ...payload, updated_at: "now()" });
+
+  try {
+    const data = await pg_query(sql, values);
+    return data.rows[0];
   } catch (error) {
     throw error;
   }

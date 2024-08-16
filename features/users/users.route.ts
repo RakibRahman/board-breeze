@@ -16,6 +16,7 @@ import {
 } from "./users.service";
 import { log } from "console";
 import { hashPassword } from "../../utils/hashPassword";
+import { verifyToken } from "../../middlewares/verify-token.middleware";
 
 const cookieConfig = {
   httpOnly: true,
@@ -66,12 +67,12 @@ usersRoute.post(
 
 usersRoute.get(
   "/:id",
-  validate(idUUIDRequestSchema),
+  [verifyToken, validate(idUUIDRequestSchema)],
   async (req: Request, res: Response, next: NextFunction) => {
     const { params } = idUUIDRequestSchema.parse(req);
     const user = await getUserProfile(params.id);
     user
-      ? res.json({ data: user, success: true })
+      ? res.json({ data: user, success: true, status: 200 })
       : res
           .status(404)
           .json({ message: "Failed to get user details", success: false });
@@ -80,7 +81,7 @@ usersRoute.get(
 
 usersRoute.put(
   "/:id",
-  validate(userUpdatePutSchema),
+  [verifyToken, validate(idUUIDRequestSchema)],
   async (req: Request, res: Response, next: NextFunction) => {
     const {
       params: { id },

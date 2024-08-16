@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { User } from "../features/users/users.schema";
 import { JwtTokenPayload } from "../utils/generateToken";
+import { CustomError } from "../models/error";
 dotenv.config();
 const env = process.env;
 
@@ -15,7 +16,7 @@ export const verifyToken = (
   const token = req.cookies.access_token;
 
   if (!token) {
-    throw new Error("No Token Provided");
+    throw new CustomError("Unauthorized: Please log in.",401);
   }
 
   try {

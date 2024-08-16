@@ -1,4 +1,3 @@
-import { describe } from "node:test";
 import { z } from "zod";
 import { uuidValidation } from "../../models/schema";
 
@@ -35,5 +34,13 @@ export const boardPostRequestSchema = z.object({
   body: boardDTO,
 });
 
+export const boardPatchRequestSchema = z.object({
+  params:z.object({
+    id:uuidValidation
+  }),
+  body: boardDTO.omit({creator_id:true}),
+});;
+
 export type Board = z.infer<typeof boardDTO>;
 export type BoardPayload = z.infer<typeof boardGetRequestSchema>;
+export type BoardPatchPayload = z.infer<typeof boardPatchRequestSchema>['body']
