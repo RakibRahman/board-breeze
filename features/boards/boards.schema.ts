@@ -41,6 +41,8 @@ export const boardPatchRequestSchema = z.object({
   body: boardDTO.omit({creator_id:true}),
 });;
 
+export const boardDeleteRequestSchema = boardPatchRequestSchema.pick({'params':true})
+
 export type Board = z.infer<typeof boardDTO>;
 export type BoardPayload = z.infer<typeof boardGetRequestSchema>;
 export type BoardPatchPayload = z.infer<typeof boardPatchRequestSchema>['body']

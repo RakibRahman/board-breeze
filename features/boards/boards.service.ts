@@ -1,8 +1,7 @@
 import { log } from "console";
 import { pg_query } from "../../db/db";
-import { Board, BoardPatchPayload, BoardPayload } from "./boards.schema";
 import { updateColumnsById } from "../../utils/commons";
-import { DB_Tables } from "../../db/Tables";
+import { Board, BoardPatchPayload, BoardPayload } from "./boards.schema";
 
 export const getUserBoards = async (payload: BoardPayload["body"]) => {
   const { id, onlyMe, sortBy, query, page, size } = payload;
@@ -39,7 +38,7 @@ ORDER BY ${"BRD." + sortBy.name} ${sortBy.order}
     const data = await pg_query(sql, [id, query || "", size, offset]);
     return {
       boardList: data.rows,
-      total: totalBoards,
+      total: +totalBoards,
       totalPages,
       nextPage: totalPages === page || totalPages === 0 ? null : page + 1,
       prevPage: page === 1 ? null : page ? page - 1 : 1,
@@ -91,8 +90,10 @@ export const updateBoard = async (
   boardId: string,
   payload: BoardPatchPayload
 ) => {
- 
-  const { sql, values } = updateColumnsById(boardId, "BOARDS",  { ...payload, updated_at: "now()" });
+  const { sql, values } = updateColumnsById(boardId, "BOARDS", {
+    ...payload,
+    updated_at: "now()",
+  });
 
   try {
     const data = await pg_query(sql, values);
@@ -101,3 +102,30 @@ export const updateBoard = async (
     throw error;
   }
 };
+
+export const deleteBoard = async (boardId: string) => {
+  const transactionSql = `
+  BEGIN;
+  CREATE OR REPLACE FUNCTION delete_board() RETURNS TRIGGER as $$
+  BEGIN
+  DELETE FROM boards WHERE id=OLD.board_id;
+  RETURN OLD;
+  END;
+ $$ LANGUAGE PLPGSQL;
+
+ CREATE OR REPLACE TRIGGER after_delete_board AFTER DELETE on board_users FOR EACH ROW EXECUTE PROCEDURE delete_board();
+  COMMIT;
+`;
+
+const sql = `DELETE FROM board_users WHERE board_id=$1 RETURNING *;`
+
+  try {
+    await pg_query(transactionSql);
+    const board = await pg_query(sql, [boardId]);
+
+    return board.rows[0];
+  } catch (error) {
+    throw error;
+  }
+};
+
