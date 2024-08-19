@@ -1,7 +1,9 @@
 import express, { NextFunction, Request, Response, Router } from "express";
 import { validate } from "../../middlewares/validation.middleware";
+import { verifyToken } from "../../middlewares/verify-token.middleware";
 import { idUUIDRequestSchema } from "../../models/schema";
 import { generateJWT } from "../../utils/generateToken";
+import { hashPassword } from "../../utils/hashPassword";
 import { ONE_HR } from "../constant";
 import {
   userLoginPostSchema,
@@ -14,9 +16,6 @@ import {
   userLogin,
   userRegistration,
 } from "./users.service";
-import { log } from "console";
-import { hashPassword } from "../../utils/hashPassword";
-import { verifyToken } from "../../middlewares/verify-token.middleware";
 
 const cookieConfig = {
   httpOnly: true,

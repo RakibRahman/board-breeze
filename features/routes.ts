@@ -3,10 +3,12 @@ import { usersRoute } from "./users/users.route";
 import { initializeDatabase } from "../db/db";
 import { boardsRouter } from "./boards/boards.route";
 import { verifyToken } from "../middlewares/verify-token.middleware";
+import { columnsRouter } from "./columns/columns.router";
 
 const ROUTE_PATHS = {
   TASKS: "/tasks",
   BOARDS: "/boards",
+  COLUMNS: "/columns",
   USERS: "/users",
   COMMENTS: "/comments",
   ATTACHMENTS: "/attachments",
@@ -19,6 +21,7 @@ const apiRouter: Router = express.Router();
 
 apiRouter.use(ROUTE_PATHS.USERS, usersRoute);
 apiRouter.use(ROUTE_PATHS.BOARDS, verifyToken, boardsRouter);
+apiRouter.use(ROUTE_PATHS.COLUMNS, verifyToken, columnsRouter);
 
 export const routes: Router = express.Router();
 
