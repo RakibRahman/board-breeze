@@ -1,3 +1,4 @@
+import { log } from "console";
 import { pg_query } from "../../db/db";
 
 export const getBoardColumns = async (boardId: string) => {
@@ -18,7 +19,7 @@ GROUP BY
 
   const tasksSql = `
     SELECT 
-    '47fecb20-7abc-49a6-99c9-0f34ed1201d6' AS column_id,
+    '137fafef-65ea-49e7-913d-cbd409917dfb' AS column_id,
     json_agg(t ORDER BY t.id) AS tasks
 FROM 
     tasks t
@@ -42,7 +43,11 @@ GROUP BY
     const formattedData: Record<string, []> = {};
     tasks.rows &&
       tasks.rows.forEach((row) => {
-        formattedData[row.column_id] = row["tasks"].filter(Boolean);
+    log({tasks:row["tasks"]})
+
+        if(row["tasks"]){
+          formattedData[row.column_id] = row["tasks"].filter(Boolean);
+        }
       });
     return {
       columns: columns.rows,

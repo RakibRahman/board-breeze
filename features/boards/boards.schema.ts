@@ -15,7 +15,7 @@ const paginationSchema = z.object({
 
 export const boardGetRequestSchema = z.object({
   body: z.object({
-    id: uuidValidation,
+    creator_id: uuidValidation,
     onlyMe: z.boolean(),
     page: paginationSchema.shape.page,
     size: paginationSchema.shape.size,

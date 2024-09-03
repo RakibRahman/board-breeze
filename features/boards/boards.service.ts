@@ -4,7 +4,7 @@ import { updateColumnsById } from "../../utils/commons";
 import { Board, BoardPatchPayload, BoardPayload } from "./boards.schema";
 
 export const getUserBoards = async (payload: BoardPayload["body"]) => {
-  const { id, onlyMe, sortBy, query, page, size } = payload;
+  const { creator_id, onlyMe, sortBy, query, page, size } = payload;
   const offset = (page - 1) * size;
   const baseSql = `
   SELECT
@@ -28,14 +28,14 @@ ORDER BY ${"BRD." + sortBy.name} ${sortBy.order}
 
   const totalBoardsResult = await pg_query(
     `SELECT COUNT(*) FROM (${baseSql}) AS subquery;`,
-    [id, query || ""]
+    [creator_id, query || ""]
   );
 
   const totalBoards = totalBoardsResult.rows[0].count;
   const totalPages = Math.ceil(totalBoards / size);
 
   try {
-    const data = await pg_query(sql, [id, query || "", size, offset]);
+    const data = await pg_query(sql, [creator_id, query || "", size, offset]);
     return {
       boardList: data.rows,
       total: +totalBoards,
